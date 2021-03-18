@@ -1,6 +1,4 @@
-# Flask React Boilerplate
-
-[![Build Status](https://travis-ci.org/YaleDHLab/flask-react-boilerplate.svg?branch=master)](https://travis-ci.org/YaleDHLab/flask-react-boilerplate)
+# AES Traits Webapp
 
 Simple boilerplate for a Flask backend and React client including:
 
@@ -16,10 +14,10 @@ Simple boilerplate for a Flask backend and React client including:
 To install the boilerplate dependencies, you can run:
 
 ```bash
-git clone https://github.com/YaleDHLab/flask-react-boilerplate
-cd flask-react-boilerplate
+git clone https://github.com/robert1ridley/cross-prompt-trait-aes-app.git
+cd cross-prompt-trait-aes-app
 npm install --no-optional
-pip install -r requirements.txt
+conda env create --file environment.yml
 ```
 
 ## Quickstart
