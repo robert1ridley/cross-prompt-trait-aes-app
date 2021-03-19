@@ -31,8 +31,8 @@ export default function RadarChart(props) {
 		});
 	});
 	return (
-		<div>
-			<canvas id="myChart" width="100%" height="100%" style={{paddingBottom: 20}} />
+		<div style={{paddingBottom: 50}}>
+			<canvas id="myChart" width="100%" height="100%" />
 		</div>
 	);
 }

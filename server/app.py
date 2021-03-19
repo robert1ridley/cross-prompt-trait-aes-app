@@ -3,6 +3,7 @@ import json
 from flask import Flask, send_from_directory, request
 from flask_cors import CORS
 from models.Scorer import Scorer
+from utils.basic_utils import get_prompt_texts_as_dict, get_single_prompt
 
 '''Main wrapper for app creation'''
 app = Flask(__name__, static_folder='../build')
@@ -21,12 +22,23 @@ def validate_request(req_json):
     return None, original_text
 
 
+@app.route('/api/prompts', methods=['GET'])
+def get_prompts():
+    return json.dumps(get_prompt_texts_as_dict())
+
+
+@app.route('/api/prompt', methods=['POST'])
+def get_prompt():
+    req_json = request.get_json()
+    promptid = req_json['promptid']
+    single_prompt = get_single_prompt(promptid)
+    return json.dumps(single_prompt)
+
+
 @app.route('/api/score', methods=['POST'])
 def get_scores():
     req_json = request.get_json()
-    print(req_json)
     all_scores = scorer.get_scores()
-    print(all_scores)
     return json.dumps(all_scores)
 
 

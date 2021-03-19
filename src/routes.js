@@ -2,15 +2,17 @@ import React from 'react';
 import { Route, Switch } from 'react-router-dom';
 import App from './components/App';
 import Home from './components/Home';
-import About from './components/About';
+import EssayForm from './components/EssayForm';
+import Header from './components/Header';
 
 const routes = (
-  <App>
-    <Switch>
-      <Route exact path='/' component={Home} />
-      <Route path='/about' component={About} />
-    </Switch>
-  </App>
+	<App>
+		<Header />
+		<Switch>
+			<Route exact path='/' component={Home} />
+			<Route path='/essay-write/:id' component={EssayForm} />
+		</Switch>
+	</App>
 )
 
 export { routes };
