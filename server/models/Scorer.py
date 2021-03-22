@@ -7,7 +7,7 @@ import tensorflow as tf
 from sklearn import preprocessing
 from utils.feature_utils import get_features_for_one_essay
 from utils.readability_utils import get_readability_features_for_one_essay
-from utils.basic_utils import get_token_ids, pad_hierarchical_text_sequences
+from utils.basic_utils import get_token_ids, pad_hierarchical_text_sequences, get_target_trait_list, get_score_vector_positions
 from custom_layers.inner_attention import InnerAttention
 from custom_layers.zeromasking import ZeroMaskedEntries
 from custom_layers.masked_loss import masked_loss_function
@@ -76,13 +76,13 @@ class Scorer():
         self.padded_tokens = padded_tokens.reshape((padded_tokens.shape[0], padded_tokens.shape[1] * padded_tokens.shape[2]))
 
     def get_scores(self):
-        print(self.padded_tokens.shape)
-        print(self.normalized_essay_features.shape)
-        print(self.normalized_readability_features.shape)
-        prediction = self.model.predict([self.padded_tokens, self.normalized_essay_features, self.normalized_readability_features])
-        print(prediction)
-        labels = ["Overall", "Content", "Organization", "Word Choice", "Sentence Fluency", "Conventions"]
-        scores = [random.randint(1, 101) for label in labels]
+        predictions = self.model.predict([self.padded_tokens, self.normalized_essay_features, self.normalized_readability_features])
+        prediction = predictions[0] * 100
+
+        labels = get_target_trait_list(self.promptid)
+        score_vector_positions = get_score_vector_positions()
+
+        scores = [int(np.around(prediction[score_vector_positions[label]]).astype(int)) for label in labels]
         return {
             'labels': labels,
             'scores': scores

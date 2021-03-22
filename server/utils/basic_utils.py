@@ -161,3 +161,34 @@ def pad_hierarchical_text_sequences(index_sequences, max_sentnum, max_sentlen):
 
         X[i, num:, :] = 0
     return X
+
+
+def get_score_vector_positions():
+    return {
+        'score': 0,
+        'content': 1,
+        'organization': 2,
+        'word_choice': 3,
+        'sentence_fluency': 4,
+        'conventions': 5,
+        'prompt_adherence': 6,
+        'language': 7,
+        'narrativity': 8
+    }
+
+
+def get_target_trait_list(prompt_id):
+    traits_dict = {
+        1: ['score', 'content', 'organization', 'word_choice',
+            'sentence_fluency', 'conventions'],
+        2: ['score', 'content', 'organization', 'word_choice',
+            'sentence_fluency', 'conventions'],
+        3: ['score', 'content', 'prompt_adherence', 'language', 'narrativity'],
+        4: ['score', 'content', 'prompt_adherence', 'language', 'narrativity'],
+        5: ['score', 'content', 'prompt_adherence', 'language', 'narrativity'],
+        6: ['score', 'content', 'prompt_adherence', 'language', 'narrativity'],
+        7: ['score', 'content', 'organization', 'conventions'],
+        8: ['score', 'content', 'organization', 'word_choice',
+            'sentence_fluency', 'conventions']
+    }
+    return traits_dict[int(prompt_id)]
