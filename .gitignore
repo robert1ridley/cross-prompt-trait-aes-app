@@ -6,3 +6,5 @@
 node_modules
 build
 __pycache__
+server/resources/*
+!server/resources/resources.md

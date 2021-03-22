@@ -1,3 +1,13 @@
+import re
+import nltk
+import numpy as np
+
+url_replacer = '<url>'
+num_regex = re.compile('^[+-]?[0-9]+\.?[0-9]*$')
+MAX_SENTLEN = 50
+MAX_SENTNUM = 100
+
+
 def get_prompt_texts_as_dict():
     prompts_dict = {
         1: ["More and more people use computers, but not everyone agrees that this benefits society. Those who support advances in technology believe that computers have a positive effect on people. They teach hand-eye coordination, give people the ability to learn about faraway places and people, and even allow people to talk online with other people. Others have different ideas. Some experts are concerned that people are spending too much time on their computers and less time exercising, enjoying nature, and interacting with family and friends.", "Write a letter to your local newspaper in which you state your opinion on the effects computers have on people. Persuade the readers to agree with you."],
@@ -15,3 +25,139 @@ def get_prompt_texts_as_dict():
 def get_single_prompt(promptid):
     prompts_dict = get_prompt_texts_as_dict()
     return prompts_dict[int(promptid)]
+
+
+def tokenize(string):
+    tokens = nltk.word_tokenize(string)
+    for index, token in enumerate(tokens):
+        if token == '@' and (index+1) < len(tokens):
+            tokens[index+1] = '@' + re.sub('[0-9]+.*', '', tokens[index+1])
+            tokens.pop(index)
+    return tokens
+
+
+def tokenize_to_sentences(text, max_sentlength, create_vocab_flag=False):
+    sents = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\!|\?)\s', text)
+
+    processed_sents = []
+    for sent in sents:
+        if re.search(r'(?<=\.{1}|\!|\?|\,)(@?[A-Z]+[a-zA-Z]*[0-9]*)', sent):
+            s = re.split(r'(?=.{2,})(?<=\.{1}|\!|\?|\,)(@?[A-Z]+[a-zA-Z]*[0-9]*)', sent)
+            ss = " ".join(s)
+            ssL = re.split(r'(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\!|\?)\s', ss)
+
+            processed_sents.extend(ssL)
+        else:
+            processed_sents.append(sent)
+
+    if create_vocab_flag:
+        sent_tokens = [tokenize(sent) for sent in processed_sents]
+        tokens = [w for sent in sent_tokens for w in sent]
+        return tokens
+
+    sent_tokens = []
+    for sent in processed_sents:
+        shorten_sents_tokens = shorten_sentence(sent, max_sentlength)
+        sent_tokens.extend(shorten_sents_tokens)
+    return sent_tokens
+
+
+def replace_url(text):
+    replaced_text = re.sub('(http[s]?://)?((www)\.)?([a-zA-Z0-9]+)\.{1}((com)(\.(cn))?|(org))', url_replacer, text)
+    return replaced_text
+
+
+def text_tokenizer(text, replace_url_flag=True, tokenize_sent_flag=True, create_vocab_flag=False):
+    text = replace_url(text)
+    text = text.replace(u'"', u'')
+    if "..." in text:
+        text = re.sub(r'\.{3,}(\s+\.{3,})*', '...', text)
+    if "??" in text:
+        text = re.sub(r'\?{2,}(\s+\?{2,})*', '?', text)
+    if "!!" in text:
+        text = re.sub(r'\!{2,}(\s+\!{2,})*', '!', text)
+
+    tokens = tokenize(text)
+    if tokenize_sent_flag:
+        text = " ".join(tokens)
+        sent_tokens = tokenize_to_sentences(text, MAX_SENTLEN, create_vocab_flag)
+        return sent_tokens
+    else:
+        raise NotImplementedError
+
+
+def shorten_sentence(sent, max_sentlen):
+    new_tokens = []
+    sent = sent.strip()
+    tokens = nltk.word_tokenize(sent)
+    if len(tokens) > max_sentlen:
+        split_keywords = ['because', 'but', 'so', 'You', 'He', 'She', 'We', 'It', 'They', 'Your', 'His', 'Her']
+        k_indexes = [i for i, key in enumerate(tokens) if key in split_keywords]
+        processed_tokens = []
+        if not k_indexes:
+            num = len(tokens) / max_sentlen
+            num = int(round(num))
+            k_indexes = [(i+1)*max_sentlen for i in range(num)]
+
+        processed_tokens.append(tokens[0:k_indexes[0]])
+        len_k = len(k_indexes)
+        for j in range(len_k-1):
+            processed_tokens.append(tokens[k_indexes[j]:k_indexes[j+1]])
+        processed_tokens.append(tokens[k_indexes[-1]:])
+
+        for token in processed_tokens:
+            if len(token) > max_sentlen:
+                num = len(token) / max_sentlen
+                num = int(np.ceil(num))
+                s_indexes = [(i+1)*max_sentlen for i in range(num)]
+
+                len_s = len(s_indexes)
+                new_tokens.append(token[0:s_indexes[0]])
+                for j in range(len_s-1):
+                    new_tokens.append(token[s_indexes[j]:s_indexes[j+1]])
+                new_tokens.append(token[s_indexes[-1]:])
+
+            else:
+                new_tokens.append(token)
+    else:
+            return [tokens]
+
+    return new_tokens
+
+
+def get_token_ids(content, pos_tags):
+    sent_tokens = text_tokenizer(content, replace_url_flag=True, tokenize_sent_flag=True)
+    sent_tokens = [[w.lower() for w in s] for s in sent_tokens]
+    sent_tag_indices = []
+    tag_indices = []
+    for sent in sent_tokens:
+        length = len(sent)
+        if length > 0:
+            tags = nltk.pos_tag(sent)
+            for tag in tags:
+                if tag[1] in pos_tags:
+                    tag_indices.append(pos_tags[tag[1]])
+                else:
+                    tag_indices.append(pos_tags['<unk>'])
+            sent_tag_indices.append(tag_indices)
+            tag_indices = []
+    return [sent_tag_indices]
+
+
+def pad_hierarchical_text_sequences(index_sequences, max_sentnum, max_sentlen):
+    X = np.empty([len(index_sequences), max_sentnum, max_sentlen], dtype=np.int32)
+
+    for i in range(len(index_sequences)):
+        sequence_ids = index_sequences[i]
+        num = len(sequence_ids)
+
+        for j in range(num):
+            word_ids = sequence_ids[j]
+            length = len(word_ids)
+            for k in range(length):
+                wid = word_ids[k]
+                X[i, j, k] = wid
+            X[i, j, length:] = 0
+
+        X[i, num:, :] = 0
+    return X

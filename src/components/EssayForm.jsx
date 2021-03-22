@@ -9,6 +9,7 @@ import {
 	Input,
 	Modal
 } from '@material-ui/core';
+import Alert from '@material-ui/lab/Alert';
 import { Link, DirectLink, Element, Events, animateScroll as scroll, scrollSpy, scroller } from 'react-scroll';
 import RadarChart from './RadarChart';
 import { useParams } from 'react-router';
@@ -45,6 +46,7 @@ export default function EssayForm() {
 	const [modalStyle] = useState(getModalStyle);
 	const [promptID, setPromptID] = useState();
 	const [prompt, setPrompt] = useState();
+	const [error, setError] = useState(null);
 	const [data, setData] = useState(null);
 	const [essayText, setEssayText] = useState('');
 	const [scoreHidden, setScoreHidden] = useState(true);
@@ -56,17 +58,19 @@ export default function EssayForm() {
 
 	const getScore = () => {
 		const payload = {
-			essayText
+			essayText,
+			promptID
 		}
 		axios.post(
 			`http://localhost:7082/api/score`, payload)
 			.then(res => {
 				setData(res.data);
+				setError(null);
 				setScoreHidden(false);
 				scrollTo();
 			})
 			.catch(error => {
-				console.log(error)
+				setError(error.response.data.error)
 			})
 	}
 
@@ -120,6 +124,10 @@ export default function EssayForm() {
 
 	return (
 		<div>
+			{
+				error &&
+				<Alert severity="error">{error}</Alert>
+			}
 			<Container maxWidth="sm">
 				<Box my={4}>
 					<Typography variant="body1" gutterBottom>
