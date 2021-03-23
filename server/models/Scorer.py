@@ -72,7 +72,7 @@ class Scorer():
     
     def read_essay_data(self):
         essay_tokens = get_token_ids(self.essay, self.vocab)
-        padded_tokens = pad_hierarchical_text_sequences(essay_tokens, max_sentnum=70, max_sentlen=50) # hardcoded len/nums
+        padded_tokens = pad_hierarchical_text_sequences(essay_tokens, max_sentnum=97, max_sentlen=50) # hardcoded len/nums
         self.padded_tokens = padded_tokens.reshape((padded_tokens.shape[0], padded_tokens.shape[1] * padded_tokens.shape[2]))
 
     def get_scores(self):
