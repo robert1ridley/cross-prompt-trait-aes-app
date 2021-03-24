@@ -6,5 +6,7 @@
 node_modules
 build
 __pycache__
+app.db
+.idea/
 server/resources/*
 !server/resources/resources.md

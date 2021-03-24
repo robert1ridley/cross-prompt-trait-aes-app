@@ -1,4 +1,5 @@
 import re
+import uuid
 import nltk
 import numpy as np
 
@@ -192,3 +193,7 @@ def get_target_trait_list(prompt_id):
             'sentence_fluency', 'conventions']
     }
     return traits_dict[int(prompt_id)]
+
+
+def generate_uuid():
+    return str(uuid.uuid4())

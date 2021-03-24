@@ -13,6 +13,7 @@
     "start": "webpack-dev-server --port 7081 --history-api-fallback --mode=development",
     "build": "webpack --config webpack.config.js --mode=production",
     "compress": "webpack --config webpack.config.js --mode=production",
+    "pop-database": "python server/populate_database.py",
     "production": "npm run build && npm run serve",
     "serve": "FLASK_APP=server/app.py flask run --port=7082",
     "lint-js": "eslint -c './src/config/.eslintrc.js' src/",

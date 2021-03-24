@@ -1,13 +1,27 @@
-'''server/app.py - main api app declaration'''
 import json
 from flask import Flask, send_from_directory, request, Response
+from flask_restful import Api
+from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from models.Scorer import Scorer
-from utils.basic_utils import get_prompt_texts_as_dict, get_single_prompt
 
-'''Main wrapper for app creation'''
+
 app = Flask(__name__, static_folder='../build')
 CORS(app)
+api = Api(app)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = 'some-secret-string'
+
+db = SQLAlchemy(app)
+db.init_app(app)
+
+
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
 
 features_path = 'server/resources/hand_crafted_v3.csv'
 readability_path = 'server/resources/allreadability_notnorm.csv'
@@ -32,15 +46,21 @@ def validate_request(req_json):
 
 @app.route('/api/prompts', methods=['GET'])
 def get_prompts():
-    return json.dumps(get_prompt_texts_as_dict())
+    prompt_data_model = PromptDataModel()
+    prompt_data = prompt_data_model.return_all()
+    prompt_data = prompt_data['prompts']
+    response = {datum['json_data'].prompt_id: datum['json_data'].prompt.split('<DIV>') for datum in prompt_data}
+    return json.dumps(response)
 
 
 @app.route('/api/prompt', methods=['POST'])
 def get_prompt():
     req_json = request.get_json()
     promptid = req_json['promptid']
-    single_prompt = get_single_prompt(promptid)
-    return json.dumps(single_prompt)
+    prompt_data_model = PromptDataModel()
+    target_prompt = prompt_data_model.find_by_prompt_id(promptid)
+    response = target_prompt.prompt.split('<DIV>')
+    return json.dumps(response)
 
 
 @app.route('/api/score', methods=['POST'])
@@ -62,3 +82,46 @@ def get_scores():
 @app.route('/<path:path>')
 def index(path):
     return send_from_directory(app.static_folder, 'index.html')
+
+
+class PromptDataModel(db.Model):
+    __tablename__ = 'prompts'
+    __table_args__ = {'extend_existing': True}
+    id = db.Column(db.Integer, primary_key=True)
+    prompt_uuid = db.Column(db.String(120), unique=True, nullable=False)
+    prompt_id = db.Column(db.String, unique=True, nullable=False)
+    prompt = db.Column(db.String(120), unique=False, nullable=False)
+
+    def set_data_fields(self, prompt_uuid, prompt_id, prompt):
+        self.prompt_uuid = prompt_uuid
+        self.prompt_id = str(prompt_id)
+        self.prompt = '<DIV>'.join(prompt)
+
+    def save_to_db(self):
+        try:
+            db.session.add(self)
+            db.session.commit()
+            return True
+        except:
+            return False
+
+    @classmethod
+    def find_by_prompt_id(cls, prompt_id):
+        return cls.query.filter_by(prompt_id=prompt_id).first()
+
+    @classmethod
+    def return_all(cls):
+        def to_json(json_vals):
+            return {
+                'json_data': json_vals
+            }
+        return {'prompts': list(map(lambda x: to_json(x), PromptDataModel.query.all()))}
+
+    @classmethod
+    def delete_all(cls):
+        try:
+            num_rows_deleted = db.session.query(cls).delete()
+            db.session.commit()
+            return {'message': '{} row(s) deleted'.format(num_rows_deleted)}
+        except:
+            return {'message': 'Something went wrong'}

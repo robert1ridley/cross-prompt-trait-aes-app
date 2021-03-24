@@ -22,6 +22,12 @@ conda env create --file environment.yml
 
 ## Quickstart
 
+The app utilizes a SQL database. To populate it, run:
+
+```bash
+npm run pop-database
+```
+
 Once the dependencies are installed, you can start the api with the following command:
 
 ```bash
