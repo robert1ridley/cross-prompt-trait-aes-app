@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { makeStyles } from '@material-ui/core/styles';
 import { 
+	Avatar,
 	Button,
 	Container, 
 	Box, 
 	Typography, 
 	Input,
-	Modal
+	Modal,
 } from '@material-ui/core';
+import { blue } from '@material-ui/core/colors';
 import Alert from '@material-ui/lab/Alert';
 import { Link, DirectLink, Element, Events, animateScroll as scroll, scrollSpy, scroller } from 'react-scroll';
 import RadarChart from './RadarChart';
@@ -37,6 +39,10 @@ const useStyles = makeStyles((theme) => ({
 	},
 	content: {
 		padding: 10
+	},
+	blue: {
+		color: theme.palette.getContrastText(blue[100]),
+		backgroundColor: blue[100],
 	}
 }));
 
@@ -160,14 +166,26 @@ export default function EssayForm() {
 					>
 						Submit
 					</Button>
-					{
-						!scoreHidden &&
-						<div id='radar-graph'>
-							<RadarChart
-								data={data}
-							/>
-						</div>
-					}
+					<div style={{paddingBottom: 50}}>
+						{
+							!scoreHidden &&
+							<div id='radar-graph'>
+								<RadarChart
+									data={data}
+								/>
+							</div>
+						}
+						{
+							!scoreHidden &&
+							data.labels.map((label, i) => 
+								<div style={{textAlign: "center", marginBottom: 10}} key={label}>
+									<Avatar style={{margin: 'auto', width: 'auto', height: 'auto'}} variant="rounded" className={classes.blue}>
+										<Typography key={label} variant="overline">{label}: {data.scores[i]}</Typography>
+									</Avatar>
+								</div>
+							)
+						}
+					</div>
 				</Box>
 			</Container>
 		</div>
